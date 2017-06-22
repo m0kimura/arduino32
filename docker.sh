@@ -23,6 +23,17 @@
       -v $HOME/Arduino:/home/$USER/Arduino \
       -v /home/$USER \
       ${project}
+  elif [[ $1 = "push" ]]; then
+    if [[ S2 = "$null" ]]; then
+      comment="update"
+    else
+      comment=$2
+    fi
+    dex push
+    git add -A
+    git commit -m "${comment}"
+    git push
+    exit
   elif [[ $1 = "stop" ]]; then
     docker stop fx-${project}
   else
