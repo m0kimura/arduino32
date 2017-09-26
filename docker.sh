@@ -1,16 +1,37 @@
 #!/bin/bash
-#
-  project=${PWD##*/}
-##
-  if [[ $1 = "build" ]] ; then
-    if [[ ! -e $HOME/Arduino ]]; then
-      mkdir $HOME/Arduino
-    fi
-    docker rm -f fx-${project}
-    docker build -t ${project} --build-arg user=$USER .
+cmd=$1
+project=${PWD##*/}
 
+
+##  FX UTILITY
+  if [[ ${cmd} = "push" ]]; then
+    dex push
+    exit
+  elif [[ ${cmd} = "stop" ]]; then
+    docker stop fx-${project}
+    exit
+  elif [[ ${cmd} = "login" ]]; then
+    docker exec -it fx-${project} /bin/bash
+    exit
+  elif [[ ${cmd} = "export" ]]; then
+    echo Export Container fx-${project} to local/fx-${project}.tar
+    docker export fx-${project} -o ../local/fx-${project}.tar
+    exit
+  elif [[ ${cmd} = "save" ]]; then
+    echo Save Image ${project} to local/${project}.tar
+    docker save ${project} -o ../local/${project}.tar
+    exit
+  fi
+##
+##
+  if [[ $DOCKER_DRIVE = "$null" ]]; then
+    DOCKER_DRIVE=$HOME
+  fi
+  if [[ $1 = "run" ]]; then
     xhost +local:user
+    docker rm fx-${project}
     docker run -d --name fx-${project} \
+      --device=/dev/ttyUSB0 \
       -e DISPLAY=$DISPLAY \
       -e XMODIFIERS=$XMODIFIERS \
       -e XIMPROGRAM=$XIMPROGRAM \
@@ -19,25 +40,11 @@
       -e LC_TYPE=ja_JP.UTF-8 \
       -e TERM=xterm \
       -v /tmp/.X11-unix:/tmp/.X11-unix \
-      -v /dev/ttyUSB0:/dev/ttyUSB0 \
-      -v $HOME/Arduino:/home/$USER/Arduino \
-      -v /home/$USER \
-      ${project}
-  elif [[ $1 = "push" ]]; then
-    if [[ S2 = "$null" ]]; then
-      comment="update"
-    else
-      comment=$2
-    fi
-    dex push
-    git add -A
-    git commit -m "${comment}"
-    git push
-    exit
-  elif [[ $1 = "stop" ]]; then
-    docker stop fx-${project}
+      -v fx-${project}/home/docker \
+      -v $DOCKER_DRIVE/Arduino:/home/docker/Arduino \
+      m0kimura/${project}
   else
+    xhost +local:user
     docker start fx-${project}
   fi
-#
-
+##
